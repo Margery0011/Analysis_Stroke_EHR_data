@@ -1,0 +1,266 @@
+---
+title: "Analysis within EHR Stroke data "
+author: "Yutian "
+date: "`r Sys.Date()`"
+output: 
+    html_document:
+        toc: TRUE
+        toc_float: TRUE
+---
+This is my PM566 Final Project website.
+
+You can download my report from this link [Download Report](https://downgit.github.io/#/home?url=https://github.com/Margery0011/PM566-final-30/blob/main/Report.pdf)
+
+Note: You can click the `Table` button at the top to see the three summary tables on the Table page and click the `Wilcoxon Test` button to check for the significant test. Sometimes it takes time to load the page and please use **Open the link in a new tab** to see these additional pages in case there might be some loading problems, thanks.
+
+# Introduction
+
+
+Every year, more than 795,000 people in the United States have a stroke[1]. And with the improvement of technology, a lot of data is stored as electronic health records, which allows us to analyze these clinical features. 
+In this project, I will use the medical records from the article `A predictive analytics approach for stroke prediction using machine learning and neural networks [Paper](https://www.sciencedirect.com/science/article/pii/S2772442522000090). *The goal is to find whether there is an association between average glucose level and whether they have had a stroke, and whether there is any relationship between intermediate glucose level and age level or obesity level.*
+
+## Dataset Information
+
+Stroke data was downloaded from EHR features [dataset](https://raw.githubusercontent.com/Soumyabrata/EHR-features/master/dataset/healthcare-dataset-stroke-data.csv) 
+
+In this data set, there are 5110 objects and 12 features as following
+
+- id: Patient ID,unique identifier,*Removed since it is not a clinical feature*
+- gender: Fender of Patient“Male”, “Female” or “Other”,*Remove "Other"*
+- age: Age of the patient
+- hypertension: 0 if the patient doesn’t have hypertension, 1 if the patient has hypertension
+- heart_disease: 0 if the patient doesn’t have any heart diseases, 1 if the patient has a heart disease
+- ever_married: “No” or “Yes”
+- work_type:Type of Occupation “children”, “Govt_jov”, “Never_worked”, “Private” or “Self-employed”
+- Residence_type: Area type of residence “Rural” or “Urban”
+- avg_glucose_level: average glucose level in blood (measured after meal)
+- bmi: body mass index *Remove Missing Values *
+- smoking_status:Patient smoking states  “formerly smoked”, “never smoked”, “smokes” or “Unknown”*
+- stroke: 1 if the patient had a stroke or 0 if not
+
+# Questions to be Addressed:
+
+In this study, I want to explore the association between average glucose level value and stroke, also I am wondering if there is any relationship between age and BMI with average glucose level. It can be stepped down as the following questions： 
+
+
+- 1. What it the density of age among stroke patients and non-stroke patients ?
+- 2. What it the density of average glucose level among stroke patients and non-stroke patients ?
+- 3. What it the distribution of average glucose level among stroke patients and non-stroke patients in different age level ?
+- 4. What it the distribution of average glucose level among stroke patients and non-stroke patients in different obesity level?
+- 5. Is there significant difference of average glucose level between stroke patients and non-stroke patients?
+- 6. Is there significant difference of age between stroke patients and non-stroke patients?
+- 7. Is there significant difference of bmi value glucose level between stroke patients and non-stroke patients?
+- 8. Is there significant difference between stroke patients and non-stroke in each age level?
+- 9. Is there significant difference between stroke patients and non-stroke patients in each obesity level ?
+
+
+# Methods 
+
+```{r install libraries, message=FALSE,results = 'hide',include=FALSE}
+list.of.packages <- c("ggplot2", "dplyr","data.table","ggpubr","mice","missForest","Amelia","ggstatsplot","plotly","cowplot")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+```
+
+```{r load libraries, warning=FALSE, message=FALSE, results = 'hide',include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(ggpubr)
+library(mice)
+library(missForest)
+library(Amelia)
+library(ggstatsplot)
+library(plotly)
+library(cowplot)
+```
+
+
+```{r load dataset , warning=FALSE, message=FALSE,cache = TRUE,include=FALSE}
+if(!file.exists("stroke.csv"))
+  download.file("https://raw.githubusercontent.com/Soumyabrata/EHR-features/master/dataset/healthcare-dataset-stroke-data.csv","stroke.csv")
+stroke <- read.csv("stroke.csv",na.strings = c("N/A","NA"))
+```
+
+
+```{r data clean 1.2,include=FALSE}
+stroke = stroke[,2:12] # remove id column
+stroke <- stroke%>%
+  filter(gender!="Other") # filter out rows which gender = "Other, 5109 objects remained" 
+```
+
+## Data Imputation
+
+```{r proportion}
+sum(is.na(stroke))/nrow(stroke) 
+```
+
+There is only 3% missing values which means imputation is acceptable, `mice` libraries was used to fo imputation.
+
+```{r Impute missing values, warning=FALSE}
+imputed_data <- mice(stroke,m=3,maxit = 5,method = 'pmm',seed = 123) 
+```
+
+```{r, include=FALSE}
+completestroke<- mice::complete(imputed_data,2) # Select 2nd out of 3 filled data
+sum(is.na(completestroke))
+```
+
+- m = 3, which means to generate 3 filled data
+- maxit = 5, the number of iterations to generate filling data each time, here is 5 times
+- method = ‘pmm’, the continuous data described above adopts the method of Predictive Mean Matching
+
+### Visualizing the missing values 
+
+```{r visualize missing values }
+missmap(completestroke)
+```
+
+As the image shows,there is no missing value after imputing data
+
+```{r Add a new bmi category column,include=FALSE}
+stroke <- completestroke
+# Change the name in order to make it more clear 
+stroke$stroke_t <- ifelse(stroke$stroke == 1, 'stroke', 'no stroke') 
+stroke$hypertension <- ifelse(stroke$hypertension == 1, 'hypertension', 'no hypertension') 
+stroke$heart_disease <- ifelse(stroke$heart_disease == 1, 'heart disease', 'no heart disease') 
+```
+
+
+
+
+```{r change_factor,include=FALSE} 
+cols <- c("gender","hypertension","heart_disease","ever_married","work_type","Residence_type","smoking_status","stroke","stroke_t")
+stroke[cols] <- lapply(stroke[cols], factor)
+```
+
+
+
+```{r,include=FALSE}
+stroke$age_level <- fifelse(stroke$age<1,"New Born",fifelse(stroke$age>=1 & stroke$age<18,"Child",fifelse(stroke$age>=18 & stroke$age <=60,"Adult","Elderly")))
+stroke$age_level <- factor(stroke$age_level)
+stroke$age_level<- factor(stroke$age_level, levels=c("New Born", "Child", "Adult", "Elderly"))
+```
+
+```{r,include=FALSE}
+stroke$obesity_level<-fifelse(stroke$bmi<14,"Underweight",fifelse(stroke$age>=14 & stroke$bmi<22,"Normal",fifelse(stroke$age>=22 & stroke$age <=24,"Overweight","Obese")))
+stroke$obesity_level  <- factor(stroke$obesity_level)
+stroke$obesity_level<- factor(stroke$obesity_level, levels=c("Underweight", "Normal", "Overweight", "Obese"))
+```
+
+```{r,include=FALSE}
+write.csv(stroke,"stroke_cleaned.csv",row.names = FALSE)
+```
+
+## Summary Table
+
+Summary tables are saved at [Tables](https://margery0011.github.io/PM566-final-30/Tables.html) page, there are three tables, one summarizing average glucose level based on stroke status, one summarizing average glucose level based on age level and the other summarizing average glucose level based on obesity level.
+
+## Signigicant Test
+
+Wilcoxon test will be performed to compare if there is significant test among two groups, the results are stored at ["Wilcoxon Test"](https://raw.githack.com/Margery0011/PM566-FinalProject/main/_site/Supp.html) page
+
+
+# Results
+
+```{r,include=FALSE}
+d1<-ggplot(stroke, aes(x = age, fill = stroke_t,color= stroke_t))+
+  geom_density(alpha = 0.3)+ ggtitle("Age Density plot based on Stroke Status")+ labs( x= "Age", y="Density")
+
+```
+
+
+
+```{r,include=FALSE}
+d2<- ggplot(stroke, aes(x = avg_glucose_level, fill = stroke_t,color= stroke_t))+geom_density(alpha = 0.3)+ ggtitle("Average Glucose Level Density plot based on Stroke Status ")+ labs( x= "avg_glucose_level(mg/dl)", y="Density")
+```
+
+
+
+```{r,include=FALSE}
+d4<- ggplot(stroke, aes(x = avg_glucose_level, fill = stroke_t,color= age_level))+geom_density(alpha = 0.3)+ ggtitle("Density Plot of avg_glucose_level based on Stroke & Non-Stroke ")+ labs( x= "avg_glucose_level(mg/dl)", y="Density")+scale_color_brewer(palette="PiYG")
+```
+
+```{r,include=FALSE}
+b1<-stroke %>%
+  ggplot() +
+  geom_boxplot(mapping=aes(x=stroke_t, y=avg_glucose_level, fill=age_level))+
+  labs(title = "Stroke Status vs Avg_glucose_level (mg/dl) by Age Level", x= "Stroke Status ", y="avg_glucose_level (mg/dl)") +
+  scale_fill_brewer(palette = "Spectral") +
+  geom_hline(yintercept = 240, color="red")
+```
+
+```{r,include=FALSE}
+b2<-stroke %>%
+  ggplot() +
+  geom_boxplot(mapping=aes(x=stroke_t, y=avg_glucose_level, fill=obesity_level))+
+  labs(title = "Stroke Status vs Avg_glucose_level (mg/dl) by Obesity Level", x= "Stroke Status ", y="avg_glucose_level (mg/dl)") +
+  scale_fill_brewer(palette = "Spectral") +
+  geom_hline(yintercept = 240, color="red")
+```
+
+```{r,include=FALSE}
+b3<-stroke %>%
+  ggplot() +
+  geom_boxplot(mapping=aes(x=stroke_t, y=avg_glucose_level, fill=stroke_t))+
+  labs(title = "Stroke Status vs Avg_glucose_level (mg/dl) by Obesity Level", x= "Stroke Status ", y="avg_glucose_level (mg/dl)") +
+  scale_fill_brewer(palette = "Spectral") +
+  geom_hline(yintercept = 240, color="red")
+b3
+```
+
+
+```{r,include=FALSE}
+ab1 <- 
+  plot_ly(data=stroke,x=~age_level, y=~avg_glucose_level, color=~stroke_t,type="box", colors = c("pink", "light blue")) %>% layout(title = 'Distribution of average glucose level based on age level') %>% layout(yaxis = list(title = "Average Glucose Level (mg/dl)"))
+```
+
+```{r,include=FALSE}
+ab2 <- 
+  plot_ly(data=stroke,x=~obesity_level, y=~avg_glucose_level, color=~stroke_t,type="box", colors = c("pink", "light blue")) %>% layout(title = 'Distribution of average glucose level based on obesity level') %>% layout(yaxis = list(title = "Average Glucose Level (mg/dl)"))
+```
+
+
+## Showcasing plots {.tabset}
+
+### Figure 1
+
+
+```{r, warning=FALSE,echo=FALSE}
+plotly::ggplotly(d1, width = 480, height = 480) 
+```
+
+<p>This plot is an interactive density plot that displays the age distribution among stroke patients and non-stroke patients. In this figure, it can be seen that stroke begins when people are about 30 years old, and the density increases considerably steadily while when it comes to patients above 70 years old, the density increases dramatically and reaches a peak at approximately 79 years old.</p><br>  
+
+
+
+### Figure 2
+
+```{r, warning=FALSE,echo=FALSE}
+plotly::ggplotly(d2, width = 480, height = 480)
+```
+
+
+<p>This interactive density plot shows the density of average glucose level(mg/dl)  based on stroke status, it can be seen that the average glucose level of most of the subjects who have not suffered a stroke was less than 150mg/dl while the density of people whose average glucose level above 150mg/dl is higher among stroke patients.</p><br>
+
+
+### Figure 3
+
+```{r, echo=FALSE, warning = FALSE, message = FALSE}
+ab1
+```
+
+<p>This is an interactive box plot with average glucose level(mg/dl) as y axis,age level as x axis and colored by stroke status.In this figure, elderly and adult stroke patient have the highest avg_glucose_level values, at 110.85 (mg/dl) and 97.2 (mg/dl) respectively.And the Q3 value reached to 200 when it comes to elderly stroke patients.  </p><br>
+
+### Figure 4
+
+```{r, echo=FALSE, warning = FALSE, message = FALSE}
+ab2
+```
+
+<p>This interactive box plot displays the average glucose level distribution based on obesity level and stroke status. While there are no underweight and overweight stroke patients, obese stroke patients' median average glucose level is 107.26(mg/dl) and others are all below 100 (mg/dl). </p><br>
+
+
+
+
+

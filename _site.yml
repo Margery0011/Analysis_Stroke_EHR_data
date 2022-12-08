@@ -1,0 +1,26 @@
+name: "my-website"
+output_dir: "."
+navbar:
+  title: "Associatation Analysis within Stroke EHR data"
+  left:
+    - text: "Home"
+      href: index.html
+      icon: fa-home
+    - text: "Tables"
+      href: Tables.html
+      icon: fa-solid fa-table
+    - text: "Wilcoxon_test"
+      href: Supp.html
+    - text: "Github"
+      href: https://github.com/Margery0011
+      icon: fa-brands fa-github
+    - text: "LinkedIn"
+      href: https://www.linkedin.com/in/margery-yutian-liu-a612b021a/
+      icon: fa-brands fa-linkedin
+      
+    
+output:
+  html_document:
+    theme: cosmo
+    include:
+      after_body: footer.html
