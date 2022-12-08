@@ -158,7 +158,7 @@ Summary tables are saved at [Tables](https://margery0011.github.io/PM566-final-3
 
 ## Signigicant Test
 
-Wilcoxon test will be performed to compare if there is significant test among two groups, the results are stored at ["Wilcoxon Test"](https://raw.githack.com/Margery0011/PM566-FinalProject/main/_site/Supp.html) page
+Wilcoxon test will be performed to compare if there is significant test among two groups, the results are stored at ["Wilcoxon Test"](https://margery0011.github.io/Analysis_Stroke_EHR_data/Supp.html) page
 
 
 # Results
