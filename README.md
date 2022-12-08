@@ -26,7 +26,7 @@ Here is my Github Page: [website](https://margery0011.github.io/Analysis_Stroke_
 
 Here is the link to the report [report](https://github.com/Margery0011/Analysis_Stroke_EHR_data/blob/main/Report.pdf)
 
-You can download it from this link [Download Report](Report.pdf)
+You can download it from this link [Download Report](https://downgit.github.io/#/home?url=https://github.com/Margery0011/Analysis_Stroke_EHR_data/blob/main/Report.pdf)
 
 Datasets are in the repository and the summary of them are stored in the `data` [folder](https://github.com/Margery0011/Analysis_Stroke_EHR_data/tree/main/data)
 
