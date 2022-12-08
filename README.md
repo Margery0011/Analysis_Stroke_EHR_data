@@ -1,5 +1,15 @@
 # Analysis within EHR Stroke data
 
+This is my PM566 final project.
+
+Updated after getting advice from Assignment 5.
+
+- Removed data cleaning from your website and just focus on the data and results.
+- Round decimals in Tables in my Report
+- Removed duplicated Figure 5
+- Fixed the link and navigation bar
+
+
 In this study, I want to explore the association between average glucose level value and stroke, also I am wondering if there is any relationship between age and BMI with average glucose level. It can be stepped down as the following questions：
 
 - 1. What it the density of age among stroke patients and non-stroke patients ?
@@ -14,7 +24,7 @@ In this study, I want to explore the association between average glucose level v
 
 Here is my Github Page: [website](https://margery0011.github.io/Analysis_Stroke_EHR_data/index.html)
 
-Here is the link to the report [report](https://github.com/Margery0011/PM566-final-30/blob/main/Report.pdf)
+Here is the link to the report [report](https://github.com/Margery0011/Analysis_Stroke_EHR_data/blob/main/Report.pdf)
 
 You can download it from this link [Download Report](https://downgit.github.io/#/home?url=https://github.com/Margery0011/Analysis_Stroke_EHR_data/blob/main/Report.pdf)
 
