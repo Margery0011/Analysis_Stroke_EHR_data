@@ -1,8 +1,7 @@
 # Analysis within EHR Stroke data
 
-This is my PM566 final project.
 
-Updated after getting advice from Assignment 5.
+Updates
 
 - Removed data cleaning from your website and just focus on the data and results.
 - Round decimals in Tables in my Report
